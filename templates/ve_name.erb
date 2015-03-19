@@ -1,0 +1,1 @@
+<%=scope.lookupvar('::sys11name')%> <%=scope.lookupvar('::ipaddress_internal')%> <% if (scope.lookupvar('::role').class == Array) -%><%=scope.lookupvar('::role').join', '%><%elsif (scope.lookupvar('::role').class == Hash)%><%=scope.lookupvar('::role').keys.join', '%><% else -%><%=scope.lookupvar('::role')%><% end %>

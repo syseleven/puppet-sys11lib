@@ -64,3 +64,38 @@ A Puppet module to download files with wget, supporting authentication. This mod
          '/var/www/klobana'
            source: 'https://github.com/klobana'
 
+## sys11lib::deprecated
+
+Helper module to easily throw notifies for deprecating warnings.
+
+### Parameters:
+
+    $set = {}
+      Hash with deprecations
+
+### Sample Usage (Sys11-ENC):
+
+    sys11lib::deprecated:
+      set:
+        'loadbalancer->virtuozzo_ve/nginx2':
+          old: 'Role "loadbalancer"'
+          new: 'Role "virtuozzo_ve" with Class "nginx2"'
+          add: 'These is additional messages which currently says really nothing.'
+
+## sys11lib::deprecated::deprecated_set
+
+### Parameters:
+
+    $old = ''
+      old thing to be deprecated
+    $new = ''
+      new thing to use instead
+    $add = ''
+      optional additional thins to say
+
+### Sample Usage (Manifest):
+
+    sys11lib::deprecated::deprecated_set { 'nginx->nginx2':
+      old => 'nginx',
+      new => 'nginx2',
+    }

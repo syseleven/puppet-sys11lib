@@ -1,3 +1,4 @@
+1.3.0 (d984e2e) Add class for checking SSL certificate grades #pp-2202
 1.2.5 (d31786f) add class/define for deprecation notices #pp-2066 
 1.2.0 (ca565d0) move get_domain_by_sys11vlan to syseleven-base <Stefan Andres> #pp-2106 
 1.1.0 (e0b4b9c)

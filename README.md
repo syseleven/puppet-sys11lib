@@ -99,3 +99,48 @@ Helper module to easily throw notifies for deprecating warnings.
       old => 'nginx',
       new => 'nginx2',
     }
+
+## sys11lib::ssl_certificate_check
+
+### Parameters:
+
+    $place_script = true
+      place the script
+    $enable_check = true
+      enable the cronjob and the nagioscheck
+    $enable_autodetection = true
+      enable autodetection of running service, domains and certificates
+    $blacklist_domains = ''
+      blacklist (don't check) these domain(s)
+    $blacklist_domains_file = ''
+      blacklist (don't check) domain(s) listed in this file
+    $whitelist_domains = ''
+      whitelist (check) these domain(s)
+    $whitelist_domains_file = ''
+      whitelist (check) domain(s) listed in this file
+    $blacklist_certificates = ''
+      blacklist (don't check) these certificate(s)
+    $blacklist_certificates_file = ''
+      blacklist (don't check) certificate(s) listed in this file
+    $service = ''
+      specify the running service. this is usefull if SSL is not running
+      on port 443
+    $return_ok_when = 'A'
+      return OK on nagios if the grade is one of these letters
+    $return_warning_when = 'BC'
+      return WARNING on nagios if the grade is one of these letters
+    $return_critical_when = 'DEFT'
+      return CRITICAL on nagios if the grade is one of these letters
+    $curl_recheck_runs = 5
+      specify how often the script tries to recheck if a curl fails
+    $curl_recheck_interval = 10
+      recheck the state of the check after this value in seconds
+    $curl_recheck_timeout = 300
+      abort the check after this value in seconds
+    $cache_result_days = 7
+      the default max cache age for results
+    $cronjob_time = ''
+      the script runs much longer than 45 seconds so we couln't check
+      it via nagios directly, we had to use a cronjob. Recommendation
+      is to keep the default. In this case puppet sets the value by
+      using random values

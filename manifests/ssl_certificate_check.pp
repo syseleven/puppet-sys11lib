@@ -71,8 +71,8 @@ class sys11lib::ssl_certificate_check (
 
   # create random cronjob time if necessary
   if $cronjob_time == '' {
-    $real_cronjob_hour = fqdn_rand(60)
-    $real_cronjob_minute = fqdn_rand(24)
+    $real_cronjob_hour = fqdn_rand(24)
+    $real_cronjob_minute = fqdn_rand(60)
     $real_cronjob_time = "$real_cronjob_minute $real_cronjob_hour * * *"
   } else {
     $real_cronjob_time = $cronjob_time

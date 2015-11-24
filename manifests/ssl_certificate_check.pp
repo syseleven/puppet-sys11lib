@@ -24,13 +24,25 @@ class sys11lib::ssl_certificate_check (
   validate_bool ( $place_script )
   validate_bool ( $enable_check )
   validate_bool ( $enable_autodetection )
-  validate_string ( $blacklist_domains )
+  if is_array ( $blacklist_domains ) {
+    validate_string ( join ( $blacklist_domains, '' ) )
+  } else {
+    validate_string ( $blacklist_domains )
+  }
   if $blacklist_domains_file != '' {
     validate_absolute_path ( $blacklist_domains_file )
   }
-  validate_string ( $whitelist_domains )
+  unless is_array ( $whitelist_domains ) or is_string ( $whitelist_domains ) {
+    fail('$blacklist_certificates needs to be a string or an array of strings')
+  }
   if $whitelist_domains_file != '' {
     validate_absolute_path ( $whitelist_domains_file )
+  }
+  unless is_array ( $blacklist_certificates ) or is_string ( $blacklist_certificates ) {
+    fail('$blacklist_certificates needs to be a string or an array of strings')
+  }
+  if $blacklist_certificates_file != '' {
+    validate_absolute_path ( $blacklist_certificates_file )
   }
   validate_string ( $service )
   validate_string ( $return_ok_when )

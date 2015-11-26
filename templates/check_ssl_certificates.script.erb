@@ -589,6 +589,12 @@ restore_cache() {
 ## check all domains, detected and listed ones in a loop
 ##
 check_certificates() {
+  # return to nagios if no valid domain was detected
+  if [ -z "$(printf "%s\n" "${autodetect_domains}" | sed 's#[ \t]*##g;')" ]; then
+    return_to_nagios "${nrpe_ok}" "no domain fulfills the requirements, so here is nothing to do for me"
+  fi
+
+  # check the domains
   for domain in ${autodetect_domains}; do
     if [ -f ${c_cache}/${domain}.response ]; then
       log "getting result from cache for domain: ${domain}"

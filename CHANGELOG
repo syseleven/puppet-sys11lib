@@ -1,3 +1,4 @@
+1.3.3 (d829755) Add skip_ip_check Parameter and fix problem with non existing /tmp/check_ssl_certificates/current.result file
 1.3.2 (382dba4) Fix typo
 1.3.1 (18580d1) Better validation of whitelist_domains and blacklist_domains
 1.3.0 (d984e2e) Add class for checking SSL certificate grades #pp-2202

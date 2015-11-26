@@ -12,6 +12,7 @@
 <% if @return_ok_when != 'A' -%> --ok-when '<%= return_ok_when %>'<% end -%>
 <% if @return_warning_when != 'BC' -%> --warning-when '<%= return_warning_when %>'<% end -%>
 <% if @return_critical_when != 'DEFT' -%> --critical-when '<%= return_critical_when %>'<% end -%>
+<% if @skip_ip_check == true -%> --skip-ip-check<% end -%>
 <% if @curl_recheck_runs != '5' -%> --curl-recheck-runs <%= curl_recheck_runs %><% end -%>
 <% if @curl_recheck_interval != '10' -%> --recheck-status-interval <%= curl_recheck_interval %><% end -%>
 <% if @curl_recheck_timeout != '300' -%> --recheck-status-timeout <%= curl_recheck_timeout %><% end -%>

@@ -14,6 +14,7 @@ class sys11lib::ssl_certificate_check (
   $return_ok_when = 'A',
   $return_warning_when = 'BC',
   $return_critical_when = 'DEFT',
+  $skip_ip_check = false,
   $curl_recheck_runs = 5,
   $curl_recheck_interval = 10,
   $curl_recheck_timeout = 300,
@@ -48,6 +49,7 @@ class sys11lib::ssl_certificate_check (
   validate_string ( $return_ok_when )
   validate_string ( $return_warning_when )
   validate_string ( $return_critical_when )
+  validate_bool ( $skip_ip_check )
   if ! is_integer ( $curl_recheck_runs ) {
     fail ( '$curl_recheck_runs must be an integer' )
   }

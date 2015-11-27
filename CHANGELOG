@@ -1,3 +1,4 @@
+1.3.6 (9311976) Better certificate collection for Nginx and fix permission issue with cronjob under Gentoo
 1.3.5 (b0f38c82) Make sure bc is installed and simplify timestamp check
 1.3.4 (39f73615) sys11mirror, ubuntu apt configuration needs purge_sources_list => true #pp-2740
 1.3.3 (d829755) Add skip_ip_check Parameter and fix problem with non existing /tmp/check_ssl_certificates/current.result file

@@ -274,9 +274,11 @@ detect_service() {
 ##
 get_certificates() {
   case ${autodetect_service} in
-    nginx)  autodetect_certificates="$(grep -rw 'ssl_certificate' /etc/nginx \
+    nginx)  config_files="/etc/nginx/nginx.conf $(grep 'include' /etc/nginx/nginx.conf | sed 's#\#.*##g;s#.*include[ \t]\+##g;s#;.*##g;s#^/etc/nginx/##g;s#^#/etc/nginx/#g;' | tr '\n' ' ')"
+            autodetect_certificates="$(cat ${config_files} \
+              | grep -w 'ssl_certificate' \
               | sed 's#[ \t]\+# #g;s#\# ssl_certificate##g;s#;.*$##g;' \
-              | grep "\.conf:" | grep -v "#ssl_certificate" \
+              | grep -v '#ssl_certificate' \
               | awk '{ print $NF; }' | sort | uniq)";;
     apache) autodetect_certificates="$(grep -rwi 'SSLCertificateFile' /etc/apache2/ \
               | sed 's#[ \t]\+# #g;s#\#.*##g;s#.*: ##g;' \
@@ -451,7 +453,9 @@ execute_curl() {
       400) return_to_nagios "${nrpe_cr}" "invalid check parameters, please check manually"
            break
            ;;
-      429) log "curl error: client request rate too high";;
+      429) log "curl error: client request rate too high"
+           break
+           ;;
       500) sleep 60;  log "curl error: internal error";;
       503) sleep 300; log "curl error: the service is not available (e.g., down for maintenance)";;
       529) sleep 60;  log "curl error: the service is overloaded";;

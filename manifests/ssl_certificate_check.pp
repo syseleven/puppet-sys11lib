@@ -124,7 +124,7 @@ class sys11lib::ssl_certificate_check (
       path    => '/etc/cron.d/check_ssl_certificates',
       owner   => 'root',
       group   => 'root',
-      mode    => '0755',
+      mode    => '0644',
       content => template('sys11lib/check_ssl_certificates.cronjob.erb'),
     }
 

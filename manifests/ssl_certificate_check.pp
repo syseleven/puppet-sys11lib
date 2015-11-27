@@ -83,10 +83,10 @@ class sys11lib::ssl_certificate_check (
   # ensure whois
   case $::operatingsystem {
     'gentoo': {
-      ensure_packages ( ['net-misc/whois'] )
+      ensure_packages ( ['net-misc/whois','sys-devel/bc'] )
     }
     'ubuntu', 'debian': {
-      ensure_packages ( ['whois'] )
+      ensure_packages ( ['whois','bc'] )
     }
     default: {
       notice("Unknown OS: $::operatingsystem, you had to ensure that whois is available by yourself")

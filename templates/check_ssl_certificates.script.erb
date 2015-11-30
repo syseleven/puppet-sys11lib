@@ -67,6 +67,7 @@ r_code=-1
 ##
 json_get_status='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["status"]))'
 json_get_grade='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["grade"]))'
+json_get_message='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["statusMessage"]))'
 
 ##
 ## display_usage()
@@ -514,8 +515,9 @@ get_certificate_check_status() {
 ## parse the result to extract the grade
 ##
 get_result_from_response() {
-  r_state=$(python -c "${json_get_status}" < ${c_cache}/${1}.response | sed 's#"##g;')
-  r_grade=$(python -c "${json_get_grade}" < ${c_cache}/${1}.response | sed 's#"##g;')
+  r_state=$(python -c "${json_get_status}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+  r_grade=$(python -c "${json_get_grade}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+  r_stmsg=$(python -c "${json_get_message}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
 
   # handle result
   if [ "${r_state}" = "READY" ]; then
@@ -528,13 +530,18 @@ get_result_from_response() {
     esac
 
     # update response
-    log "grade for domain ${1}: ${r_grade}"
-    printf "grade for domain %s: %s%s\n" "${1}" "${r_grade}" "${2:-}" >> ${c_lockdir}/current.result
+    if [ -n "${r_grade}" ]; then
+      log "grade for domain ${1}: ${r_grade}"
+      printf "grade for domain %s: %s%s\n" "${1}" "${r_grade}" "${2:-}" >> ${c_lockdir}/current.result
+    else
+      log "cannot get grade for domain ${1}, message: ${r_stmsg}"
+      printf "cannot get grade for domain %s, message: %s\n" "${1}" "${r_stmsg}" >> ${c_lockdir}/current.result
+    fi
     cat ${c_cache}/${1}.response > ${c_cache}/${1}.last.success
   else
     # update response
-    log "cannot get grade for domain ${1}: ${r_grade}"
-    printf "cannot get grade for domain %s\n" "${1}" >> ${c_lockdir}/current.result
+    log "cannot get grade for domain ${1}, message: ${r_stmsg}"
+    printf "cannot get grade for domain %s, message: %s\n" "${1}" "${r_stmsg}" >> ${c_lockdir}/current.result
     cat ${c_cache}/${1}.response > ${c_cache}/${1}.last.failure
 
     # remove cached file to force a recheck

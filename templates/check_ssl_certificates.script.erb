@@ -333,9 +333,11 @@ get_domains() {
 
         # ip is not a SysEleven-IP
         if ${p_check_ip}; then
-          if [ $(whois "${domain_ip}" | grep -cwi syseleven) -eq 0 ]; then
-            log "the IP ${domain_ip} ${domain} resolves to is not a SysEleven IP, skipping check for this domain"
-            continue
+          if [ "${domain_ip:0:3}" != '10.' -a "${domain_ip:0:4}" != '127.' ]; then
+            if [ $(whois "${domain_ip}" | grep -cwi syseleven) -eq 0 ]; then
+              log "the IP ${domain_ip} ${domain} resolves to is not a SysEleven IP, skipping check for this domain"
+              continue
+            fi
           fi
         fi
 

@@ -19,7 +19,8 @@ class sys11lib::ssl_certificate_check (
   $curl_recheck_interval = 10,
   $curl_recheck_timeout = 300,
   $cache_result_days = 7,
-  $cronjob_time = '',
+  $cronjob_hour = -1,
+  $cronjob_minute = -1,
 ) {
   # ensure correct types
   validate_bool ( $place_script )
@@ -62,6 +63,12 @@ class sys11lib::ssl_certificate_check (
   if ! is_integer ( $cache_result_days ) {
     fail ( '$cache_result_days must be an integer' )
   }
+  if ! is_integer ( $cronjob_hour ) {
+    fail ( '$cronjob_hour must be an integer' )
+  }
+  if ! is_integer ( $cronjob_minute ) {
+    fail ( '$cronjob_minute must be an integer' )
+  }
 
   # check paremeters
   if $place_script == false and $enable_check == true {
@@ -72,12 +79,15 @@ class sys11lib::ssl_certificate_check (
   }
 
   # create random cronjob time if necessary
-  if $cronjob_time == '' {
-    $real_cronjob_hour = fqdn_rand(24)
+  if $cronjob_minute == -1 {
     $real_cronjob_minute = fqdn_rand(60)
-    $real_cronjob_time = "$real_cronjob_minute $real_cronjob_hour * * *"
   } else {
-    $real_cronjob_time = $cronjob_time
+    $real_cronjob_minute = $cronjob_minute
+  }
+  if $cronjob_hour == -1 {
+    $real_cronjob_hour = fqdn_rand(24)
+  } else {
+    $real_cronjob_hour = $cronjob_hour
   }
 
   # ensure whois
@@ -119,13 +129,21 @@ class sys11lib::ssl_certificate_check (
 
   # place and activate or remove the cronjob and the nagioscheck
   if $enable_check {
-    file { 'cronjob check_ssl_certificates':
+    file { 'caller check_ssl_certificates':
       ensure  => file,
-      path    => '/etc/cron.d/check_ssl_certificates',
+      path    => '/usr/local/sbin/call_ssl_certificates_check',
       owner   => 'root',
       group   => 'root',
-      mode    => '0644',
-      content => template('sys11lib/check_ssl_certificates.cronjob.erb'),
+      mode    => '0700',
+      content => template('sys11lib/check_ssl_certificates.caller.erb'),
+    } ->
+    cron { 'certificate_check':
+      ensure  => present,
+      name    => 'SysEleven SSL certificate check',
+      hour    => $real_cronjob_hour,
+      minute  => $real_cronjob_minute,
+      user    => 'root',
+      command => '/usr/local/sbin/call_ssl_certificates_check >/dev/null 2>/dev/null',
     }
 
     # needed to have nagios::nrpe::plugindir loaded before using
@@ -149,9 +167,13 @@ class sys11lib::ssl_certificate_check (
     nagios::hostgroup::register_hostgroup { 'ssl_certificate_grade':  }
   } else {
     # remove cronjob
-    file { 'cronjob check_ssl_certificates':
+    file { 'caller check_ssl_certificates':
+      ensure  => absent,
+      path    => '/usr/local/sbin/call_ssl_certificates_check',
+    } ->
+    cron { 'certificate_check':
       ensure => absent,
-      path   => '/etc/cron.d/check_ssl_certificates',
+      name   => 'SysEleven SSL certificate check',
     }
 
     # unregister hostgroup

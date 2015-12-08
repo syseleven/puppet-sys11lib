@@ -1,3 +1,4 @@
+1.3.8 (13e9ae11) Use cron resource instead of file in /etc/cron.d/
 1.3.7 (82a6e9c) handle statusMessage if grade was not available pp-2743
 1.3.6 (9311976) Better certificate collection for Nginx and fix permission issue with cronjob under Gentoo
 1.3.5 (b0f38c82) Make sure bc is installed and simplify timestamp check

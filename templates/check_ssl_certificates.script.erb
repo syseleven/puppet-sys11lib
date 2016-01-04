@@ -68,6 +68,9 @@ r_code=-1
 json_get_status='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["status"]))'
 json_get_grade='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["grade"]))'
 json_get_message='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["statusMessage"]))'
+json_cnt_endpoints='import json,sys;sys.stdout.write(str(len(json.load(sys.stdin)["endpoints"])))'
+json_get_domain='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["serverName"]))'
+json_get_ipaddress='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["ipAddress"]))'
 
 ##
 ## display_usage()
@@ -82,8 +85,8 @@ display_usage() {
   printf " -B | --blacklist-file               get blacklisted domains from this file\n"
   printf " -w | --whitelist                    add a domain to the whitelist (check this domain)\n"
   printf " -W | --whitelist-file               get whitelisted domains from this file\n"
-  printf " -c | --blacklist-certificate        add a domain to the blacklist (don't check this domain)\n"
-  printf " -C | --blacklist-certificate-file   get blacklisted domains from this file\n"
+  printf " -c | --blacklist-certificate        add a certificate to the blacklist (don't check this certificate)\n"
+  printf " -C | --blacklist-certificate-file   get blacklisted certificates from this file\n"
   printf " -s | --service                      specify service to prevent autodetection\n"
   printf " --ok-when                           define when script return ok for a domain (default: A)\n"
   printf " --warning-when                      define when script return warning for a domain (default: BC)\n"
@@ -91,7 +94,7 @@ display_usage() {
   printf " --curl-recheck-runs                 recheck in case of known curl error this times\n"
   printf " --recheck-status-interval           recheck the status in this interval\n"
   printf " --recheck-status-timeout            timeout for status recheck\n"
-  printf " --result-cache-time                 cache results for domains\n"
+  printf " --result-cache-time                 cache results for domains for this time\n"
   printf " --clear-cache                       clear cache for all domains\n"
   printf " --skip-ip-check                     skip the check if the IP is bound to this server\n"
   printf " -v | --verbose                      display output\n"
@@ -275,7 +278,7 @@ detect_service() {
 ##
 get_certificates() {
   case ${autodetect_service} in
-    nginx)  config_files="/etc/nginx/nginx.conf $(grep 'include' /etc/nginx/nginx.conf | sed 's#\#.*##g;s#.*include[ \t]\+##g;s#;.*##g;s#^/etc/nginx/##g;s#^#/etc/nginx/#g;' | tr '\n' ' ')"
+    nginx)  config_files="/etc/nginx/nginx.conf $(grep 'include' /etc/nginx/nginx.conf | sed 's#\#.*##g;s#.*include[ \t]\+##g;s#;.*##g;s#[ \t]\+$##g;s#^/etc/nginx/##g;s#^#/etc/nginx/#g;s#^/etc/nginx/$##g;' | tr '\n' ' ')"
             autodetect_certificates="$(cat ${config_files} \
               | grep -w 'ssl_certificate' \
               | sed 's#[ \t]\+# #g;s#\# ssl_certificate##g;s#;.*$##g;' \
@@ -520,6 +523,47 @@ get_result_from_response() {
   r_state=$(python -c "${json_get_status}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
   r_grade=$(python -c "${json_get_grade}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
   r_stmsg=$(python -c "${json_get_message}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+  r_count=$(python -c "${json_cnt_endpoints}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+
+  # get endpoint
+  if [ "${r_count}" != '1' ]; then
+    log "there are ${r_count} endpoints"
+    for i in $(seq 1 1 ${r_count}); do
+      # get number of previous item
+      pi=$(printf '%s-1\n' "${i}" | bc)
+
+      # build json helpers
+      p_grade="$(printf '%s\n' "${json_get_grade}" | sed "s#\[0\]#\[${pi}\]#g;")"
+      p_stmsg="$(printf '%s\n' "${json_get_message}" | sed "s#\[0\]#\[${pi}\]#g;")"
+      p_domain="$(printf '%s\n' "${json_get_domain}" | sed "s#\[0\]#\[${pi}\]#g;")"
+      p_ip="$(printf '%s\n' "${json_get_ipaddress}" | sed "s#\[0\]#\[${pi}\]#g;")"
+
+      # get grade, message, domain and ip for current endpoint
+      r_grade=$(python -c "${p_grade}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+      r_stmsg=$(python -c "${p_stmsg}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+      r_domain=$(python -c "${p_domain}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+      r_ip=$(python -c "${p_ip}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+
+      # get ip domain resolves to
+      domain_ip="$(ping -c1 -W2 "${1}" 2>/dev/null | grep '^PING' | sed 's#.* (##g;s#).*##g;')"
+
+      # print data for endpoint
+      log "endpoint ${i}: ${r_domain} (${r_ip})"
+
+      # break if domain or ip is matching
+      if [ "${1}" == "${r_domain}" ]; then
+        log "grade for endpoint ${i}: ${r_grade}"
+        log "breaking loop through endpoints cause domain is matching"
+        break
+      elif [ "${domain_ip}" == "${r_ip}" ]; then
+        log "grade for endpoint ${i}: ${r_grade}"
+        log "breaking loop through endpoints cause ip is matching"
+        break
+      else
+        log "cannot get grade for endpoint ${i}, message: ${r_stmsg}"
+      fi
+    done
+  fi
 
   # handle result
   if [ "${r_state}" = "READY" ]; then

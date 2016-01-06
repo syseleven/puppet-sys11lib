@@ -182,7 +182,7 @@ parse_commandline() {
       -B | --blacklist-file)               p_blacklist_file=${2}; shift 2;;
       -w | --whitelist)                    p_whitelist="${p_whitelist} ${2}"; shift 2;;
       -W | --whitelist-file)               p_whitelist_file=${2}; shift 2;;
-      -c | --blacklist-certificate)        p_cert_blacklist="${p_blacklist} ${2}"; shift 2;;
+      -c | --blacklist-certificate)        p_cert_blacklist="${p_cert_blacklist} ${2}"; shift 2;;
       -C | --blacklist-certificate-file)   p_cert_blacklist_file=${2}; shift 2;;
       -s | --service)                      p_service=${2}; shift 2;;
       --ok-when)                           p_ok_when=${2}; shift 2;;
@@ -386,17 +386,17 @@ autodetect_domains() {
 ## handle all blacklisted certificates
 ##
 handle_certificate_blacklist() {
-  # handle blacklisted domains from parameter
+  # handle blacklisted certificates from parameter
   for blacklisted_certificate in ${p_cert_blacklist}; do
     log "blacklisting certificate: ${blacklisted_certificate}"
-    autodetect_certificates="$(printf "%s\n" "${autodetect_certificates}" | sed "s#${blacklisted_certificate}##g;s#^ ##g;s#  # #g;")"
+    autodetect_certificates="$(printf "%s\n" "${autodetect_certificates}" | tr ' ' '\n' | sed "s#^${blacklisted_certificate//\./\\\.}\$##g;" | tr '\n' ' ' | sed 's#^[ \t]*##;s#[ \t]*$##;s#  # #g;')"
   done
 
   # handle blacklisted domains from file
   if [ -f "${p_cert_blacklist_file}" ]; then
     for blacklisted_certificate in $(cat ${p_cert_blacklist_file}); do
       log "blacklisting certificate: ${blacklisted_certificate}"
-      autodetect_certificates="$(printf "%s\n" "${autodetect_certificates}" | sed "s#${blacklisted_certificate}##g;s#^ ##g;s#  # #g;")"
+      autodetect_certificates="$(printf "%s\n" "${autodetect_certificates}" | tr ' ' '\n' | sed "s#^${blacklisted_certificate//\./\\\.}\$##g;" | tr '\n' ' ' | sed 's#^[ \t]*##;s#[ \t]*$##;s#  # #g;')"
     done
   fi
 }
@@ -410,14 +410,14 @@ handle_blacklist() {
   # handle blacklisted domains from parameter
   for blacklisted in ${p_blacklist}; do
     log "blacklisting domain: ${blacklisted}"
-    autodetect_domains="$(printf "%s\n" "${autodetect_domains}" | sed "s#${blacklisted}##g;s#^ ##g;s#  # #g;")"
+    autodetect_domains="$(printf "%s\n" "${autodetect_domains}" | tr ' ' '\n' | sed "s#^${blacklisted//\./\\\.}\$##g;" | tr '\n' ' ' | sed 's#^[ \t]*##;s#[ \t]*$##;s#  # #g;')"
   done
 
   # handle blacklisted domains from file
   if [ -f "${p_blacklist_file}" ]; then
     for blacklisted in $(cat ${p_blacklist_file}); do
       log "blacklisting domain: ${blacklisted}"
-      autodetect_domains="$(printf "%s\n" "${autodetect_domains}" | sed "s#${blacklisted}##g;s#^ ##g;s#  # #g;")"
+      autodetect_domains="$(printf "%s\n" "${autodetect_domains}" | tr ' ' '\n' | sed "s#^${blacklisted//\./\\\.}\$##g;" | tr '\n' ' ' | sed 's#^[ \t]*##;s#[ \t]*$##;s#  # #g;')"
     done
   fi
 }

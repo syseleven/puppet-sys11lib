@@ -1,3 +1,4 @@
+1.3.10 Fix bug with subdomain matches in blacklists #pp-2827
 1.3.9 (86205be) Fix failure with multiple detected endpoints #pp-2822
 1.3.8 (13e9ae11) Use cron resource instead of file in /etc/cron.d/
 1.3.7 (82a6e9c) handle statusMessage if grade was not available pp-2743

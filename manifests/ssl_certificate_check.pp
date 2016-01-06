@@ -99,7 +99,7 @@ class sys11lib::ssl_certificate_check (
       ensure_packages ( ['whois','bc'] )
     }
     default: {
-      notice("Unknown OS: $::operatingsystem, you had to ensure that whois is available by yourself")
+      notice("Unknown OS: ${::operatingsystem}, you had to ensure that whois is available by yourself")
     }
   }
 
@@ -168,8 +168,8 @@ class sys11lib::ssl_certificate_check (
   } else {
     # remove cronjob
     file { 'caller check_ssl_certificates':
-      ensure  => absent,
-      path    => '/usr/local/sbin/call_ssl_certificates_check',
+      ensure => absent,
+      path   => '/usr/local/sbin/call_ssl_certificates_check',
     } ->
     cron { 'certificate_check':
       ensure => absent,

@@ -81,7 +81,7 @@ class sys11lib::wget(
       /(tar\.gz|tgz)$/ => "tar zxvf ${download_destination} --strip-components=1 -C ${final_destination}",
       /(tar\.bz|tbz)$/ => "tar jxvf ${download_destination} --strip-components=1 -C ${final_destination}",
       /zip$/ => "unzip -d ${final_destination} ${download_destination}",
-      default => 'true',
+      default => fail("Don't know how to unpack this extension: ${download_destination}"),
     }
     file { $final_destination:
       ensure => directory,

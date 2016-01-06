@@ -48,27 +48,27 @@ define sys11lib::ensure_key_value (
   }
 
   #quoting hell ahead
-  $sedquotedline = regsubst(regsubst("$key$delimiter$value",'\\','\\\\'), '&', '\\&')
+  $sedquotedline = regsubst(regsubst("${key}${delimiter}${value}",'\\','\\\\'), '&', '\\&')
   $regqkey = regsubst($key,'[\[\].*]','\\\0', 'G')
-  $qsedexpr = shellquote("s|^[ \t]*$regqkey[ \t]*$delimiter.*$|$sedquotedline|g")
-  $qgrepexpr = shellquote("^[ \t]*$regqkey[ \t]*$delimiter" )
-  $qline = shellquote("$key$delimiter$value")
-  $qgrepline = shellquote("$key$delimiter$value")
+  $qsedexpr = shellquote("s|^[ \t]*${regqkey}[ \t]*${delimiter}.*$|${sedquotedline}|g")
+  $qgrepexpr = shellquote("^[ \t]*${regqkey}[ \t]*${delimiter}" )
+  $qline = shellquote("${key}${delimiter}${value}")
+  $qgrepline = shellquote("${key}${delimiter}${value}")
   $qkey = shellquote($regqkey)
   # append line if "$key" not in "$file"
 
   if $ensure == 'present' {
-    exec { "append $key$delimiter$value $file":
-      command => "echo $qline >> $file",
-      unless  => "${grep_command} -qe $qgrepexpr -- \"$file\"",
+    exec { "append ${key}${delimiter}${value} ${file}":
+      command => "echo ${qline} >> ${file}",
+      unless  => "${grep_command} -qe ${qgrepexpr} -- \"${file}\"",
       path    => '/bin:/usr/bin:/usr/local/bin:/opt/csw/bin',
-      before  => Exec["update $key$delimiter$value $file"],
+      before  => Exec["update ${key}${delimiter}${value} ${file}"],
     }
 
     # update it if it already exists...
-    exec { "update $key$delimiter$value $file":
-      command => "${sed_command} --in-place='' --expression=$qsedexpr \"$file\"",
-      unless  => "${grep_command} -xqF $qgrepline -- $file",
+    exec { "update ${key}${delimiter}${value} ${file}":
+      command => "${sed_command} --in-place='' --expression=${qsedexpr} \"${file}\"",
+      unless  => "${grep_command} -xqF ${qgrepline} -- ${file}",
       path    => '/bin:/usr/bin:/usr/local/bin:/opt/csw/bin',
     }
   }

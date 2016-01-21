@@ -116,7 +116,7 @@ log() {
   if tty -s; then
     printf "%s\n" "${1:-empty message}" | sed "s#^#${prefix}#g;" | tee -a ${c_logfile:-/var/log/check_ssl_certificates.log}
   else
-    printf "%s\n" "${1:-empty message}" | sed "s#^#${prefix}#g;" > ${c_logfile:-/var/log/check_ssl_certificates.log}
+    printf "%s\n" "${1:-empty message}" | sed "s#^#${prefix}#g;" >> ${c_logfile:-/var/log/check_ssl_certificates.log}
   fi
 }
 
@@ -681,6 +681,25 @@ parse_results() {
 }
 
 ##
+## logrotate
+##
+logrotate() {
+  # loop until log is cleaned
+  while [ $(sed 's#.*\[##g;s#\].*##g;' "${c_logfile}" | uniq | wc -l) -gt 14 ]; do
+    # get oldest pid
+    opid="$(sed 's#.*\[##g;s#\].*##g;' "${c_logfile}" | head -n1)"
+
+    # remove entries with that pid
+    sed -i "/\[${opid}\]/d;" "${c_logfile}"
+    if [ ${?} -eq 0 ]; then
+      log "cleaned logfile of pid: ${opid}"
+    else
+      log "cannot clean logfile of pid: ${opid}"
+    fi
+  done
+}
+
+##
 ## start of the main procedure
 ##
 if [ ! -d ${c_cache:-/var/cache/ssl} ]; then
@@ -689,8 +708,8 @@ fi
 parse_commandline ${*}
 lock_script
 check_parameters
+logrotate
 build_domain_list
 check_cache
 check_certificates
 parse_results
-

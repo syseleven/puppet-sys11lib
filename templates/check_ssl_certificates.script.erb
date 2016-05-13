@@ -608,7 +608,7 @@ check_cache() {
     done
   else
     while read c; do
-      cache_limit="$(printf "%s+%s\n" "$(ls -l --time-style=+%s ${c} | awk '{print $6;}')" "${p_result_cache_time}" | bc)"
+      cache_limit="$(printf "%s+%s\n" "$(ls -l --time-style=+%s ${c//\*/\\\*} | awk '{print $6;}')" "${p_result_cache_time}" | bc)"
       if [ $(date +%s) -gt ${cache_limit} ]; then
         log "clearing cached result: ${c}"
         mv ${c} ${c}.cached

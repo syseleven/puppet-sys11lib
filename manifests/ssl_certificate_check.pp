@@ -152,7 +152,7 @@ class sys11lib::ssl_certificate_check (
     file { 'nagioscheck check_ssl_certificates':
       ensure  => file,
       path    => "${nagios::nrpe::plugindir}/check_ssl_certificates",
-      owner   => 'nagios',
+      owner   => $nagios::nrpe::nagios_user,
       group   => 'root',
       mode    => '0750',
       content => template('sys11lib/check_ssl_certificates.nagioscheck.erb'),

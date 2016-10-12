@@ -131,6 +131,10 @@ Helper module to easily throw notifies for deprecating warnings.
       return WARNING on nagios if the grade is one of these letters
     $return_critical_when = 'DEFT'
       return CRITICAL on nagios if the grade is one of these letters
+    $ending_warning_limit = 21
+      return WARNING when a certificate expires in less than these days
+    $ending_critical_limit = 7
+      return CRITICAL when a certificate expires in less than these days
     $curl_recheck_runs = 5
       specify how often the script tries to recheck if a curl fails
     $curl_recheck_interval = 10

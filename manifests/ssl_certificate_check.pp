@@ -14,6 +14,8 @@ class sys11lib::ssl_certificate_check (
   $return_ok_when = 'A',
   $return_warning_when = 'BC',
   $return_critical_when = 'DEFT',
+  $ending_warning_limit = 21,
+  $ending_critical_limit = 7,
   $skip_ip_check = false,
   $curl_recheck_runs = 5,
   $curl_recheck_interval = 10,
@@ -50,25 +52,15 @@ class sys11lib::ssl_certificate_check (
   validate_string ( $return_ok_when )
   validate_string ( $return_warning_when )
   validate_string ( $return_critical_when )
+  validate_string ( $ending_warning_limit )
+  validate_string ( $ending_critical_limit )
   validate_bool ( $skip_ip_check )
-  if ! is_integer ( $curl_recheck_runs ) {
-    fail ( '$curl_recheck_runs must be an integer' )
-  }
-  if ! is_integer ( $curl_recheck_interval ) {
-    fail ( '$curl_recheck_interval must be an integer' )
-  }
-  if ! is_integer ( $curl_recheck_timeout ) {
-    fail ( '$curl_recheck_timeout must be an integer' )
-  }
-  if ! is_integer ( $cache_result_days ) {
-    fail ( '$cache_result_days must be an integer' )
-  }
-  if ! is_integer ( $cronjob_hour ) {
-    fail ( '$cronjob_hour must be an integer' )
-  }
-  if ! is_integer ( $cronjob_minute ) {
-    fail ( '$cronjob_minute must be an integer' )
-  }
+  validate_integer ( $curl_recheck_runs )
+  validate_integer ( $curl_recheck_interval )
+  validate_integer ( $curl_recheck_timeout )
+  validate_integer ( $cache_result_days )
+  validate_integer ( $cronjob_hour )
+  validate_integer ( $cronjob_minute )
 
   # check paremeters
   if $place_script == false and $enable_check == true {

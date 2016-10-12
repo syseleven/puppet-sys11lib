@@ -1,3 +1,4 @@
+1.3.14 Add certificate expiration for sys11lib::ssl_certificate_check #pp-3255
 1.3.12 Add --clear-cache for sys11lib::ssl_certificate_check #pp-3043
 1.3.11 Add logrotate for sys11lib::ssl_certificate_check #pp-2881
 1.3.10 Fix bug with subdomain matches in blacklists #pp-2827

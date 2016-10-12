@@ -31,6 +31,9 @@ i_result_ok=0
 i_result_wa=0
 i_result_cr=0
 i_result_sk=0
+i_result_expired=0
+i_result_exp_wa=0
+i_result_exp_cr=0
 
 ##
 ## parameters, flags and defaults
@@ -46,6 +49,8 @@ p_service=''
 p_ok_when='A'
 p_warning_when='BC'
 p_critical_when='DEFMT'
+p_warning_ending=21
+p_critical_ending=7
 p_curl_recheck_runs=5
 p_recheck_status_interval=10
 p_recheck_status_timeout=300
@@ -68,6 +73,7 @@ r_code=-1
 json_get_status='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["status"]))'
 json_get_grade='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["grade"]))'
 json_get_message='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["statusMessage"]))'
+json_get_ending='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["details"]["cert"]["notAfter"]))'
 json_cnt_endpoints='import json,sys;sys.stdout.write(str(len(json.load(sys.stdin)["endpoints"])))'
 json_get_domain='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["serverName"]))'
 json_get_ipaddress='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["ipAddress"]))'
@@ -91,6 +97,8 @@ display_usage() {
   printf " --ok-when                           define when script return ok for a domain (default: A)\n"
   printf " --warning-when                      define when script return warning for a domain (default: BC)\n"
   printf " --critical-when                     define when script return critical for a domain (default: DEFT)\n"
+  printf " --ending-warning-limit              define when script return warning for an expiring certificate (default: 21)\n"
+  printf " --ending-critical-limit             define when script return critical for an expiring certificate (default: 7)\n"
   printf " --curl-recheck-runs                 recheck in case of known curl error this times\n"
   printf " --recheck-status-interval           recheck the status in this interval\n"
   printf " --recheck-status-timeout            timeout for status recheck\n"
@@ -167,7 +175,7 @@ parse_commandline() {
   cmdline_parameters="${*}"
 
   # get parameters from commandline
-  parameters=$(getopt -o 'aAb:B:w:W:c:C:s:vqh' --long 'autodetect,disable-autodetect,blacklist:,blacklist-file:,whitelist:,whitelist-file:,blacklist-certificate:,blacklist-certificate-file:,service:,ok-when:,warning-when:,critical-when:,curl-recheck-runs:,recheck-status-interval:,recheck-status-timeout:,result-cache-time:,clear-cache,skip-ip-check,verbose,quiet,help' -- "${@}" 2>/dev/null)
+  parameters=$(getopt -o 'aAb:B:w:W:c:C:s:vqh' --long 'autodetect,disable-autodetect,blacklist:,blacklist-file:,whitelist:,whitelist-file:,blacklist-certificate:,blacklist-certificate-file:,service:,ok-when:,warning-when:,critical-when:,ending-warning-limit:,ending-critical-limit:,curl-recheck-runs:,recheck-status-interval:,recheck-status-timeout:,result-cache-time:,clear-cache,skip-ip-check,verbose,quiet,help' -- "${@}" 2>/dev/null)
   if [ ${?} -ne 0 ]; then
     display_usage 1
   fi
@@ -188,6 +196,8 @@ parse_commandline() {
       --ok-when)                           p_ok_when=${2}; shift 2;;
       --warning-when)                      p_warning_when=${2}; shift 2;;
       --critical-when)                     p_critical_when=${2}; shift 2;;
+      --ending-warning-limit)              p_warning_ending=${2}; shift 2;;
+      --ending-critical-limit)             p_critical_ending=${2}; shift 2;;
       --curl-recheck-runs)                 p_curl_recheck_runs=${2}; shift 2;;
       --recheck-status-interval)           p_recheck_status_interval=${2}; shift 2;;
       --recheck-status-timeout)            p_recheck_status_timeout=${2}; shift 2;;
@@ -354,7 +364,7 @@ get_domains() {
       # in case no domain has an ip an is a SysEleven-IP
       if ! ${found}; then
         log "no domain fulfills the requirements, skipping certificate ${certificate}"
-        i_result_sk="$(printf "%s+1\n" "${i_result_sk}" | bc)"
+        let 'i_result_sk++'
       fi
     fi
   done
@@ -524,6 +534,7 @@ get_result_from_response() {
   r_grade=$(python -c "${json_get_grade}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
   r_stmsg=$(python -c "${json_get_message}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
   r_count=$(python -c "${json_cnt_endpoints}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+  r_valid=$(python -c "${json_get_ending}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
 
   # get endpoint
   if [ "${r_count}" != '1' ]; then
@@ -537,12 +548,14 @@ get_result_from_response() {
       p_stmsg="$(printf '%s\n' "${json_get_message}" | sed "s#\[0\]#\[${pi}\]#g;")"
       p_domain="$(printf '%s\n' "${json_get_domain}" | sed "s#\[0\]#\[${pi}\]#g;")"
       p_ip="$(printf '%s\n' "${json_get_ipaddress}" | sed "s#\[0\]#\[${pi}\]#g;")"
+      p_ending="$(printf '%s\n' "${json_get_ending}" | sed "s#\[0\]#\[${pi}\]#g;")"
 
       # get grade, message, domain and ip for current endpoint
       r_grade=$(python -c "${p_grade}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
       r_stmsg=$(python -c "${p_stmsg}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
       r_domain=$(python -c "${p_domain}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
       r_ip=$(python -c "${p_ip}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+      r_valid=$(python -c "${p_ending}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
 
       # get ip domain resolves to
       domain_ip="$(ping -c1 -W2 "${1}" 2>/dev/null | grep '^PING' | sed 's#.* (##g;s#).*##g;')"
@@ -569,9 +582,9 @@ get_result_from_response() {
   if [ "${r_state}" = "READY" ]; then
     # update returncode
     case ${r_grade} in
-      [${p_ok_when}]*)        if [ ${r_code} -le ${nrpe_ok} ]; then r_code=${nrpe_ok}; fi; i_result_ok="$(printf "%s+1\n" "${i_result_ok}" | bc)";;
-      [${p_warning_when}]*)   if [ ${r_code} -le ${nrpe_wa} ]; then r_code=${nrpe_wa}; fi; i_result_wa="$(printf "%s+1\n" "${i_result_wa}" | bc)";;
-      [${p_critical_when}]*)  if [ ${r_code} -le ${nrpe_cr} ]; then r_code=${nrpe_cr}; fi; i_result_cr="$(printf "%s+1\n" "${i_result_cr}" | bc)";;
+      [${p_ok_when}]*)        if [ ${r_code} -le ${nrpe_ok} ]; then r_code=${nrpe_ok}; fi; let 'i_result_ok++';;
+      [${p_warning_when}]*)   if [ ${r_code} -le ${nrpe_wa} ]; then r_code=${nrpe_wa}; fi; let 'i_result_wa++';;
+      [${p_critical_when}]*)  if [ ${r_code} -le ${nrpe_cr} ]; then r_code=${nrpe_cr}; fi; let 'i_result_cr++';;
       *)                      r_code=${nrpe_un};;
     esac
 
@@ -592,6 +605,22 @@ get_result_from_response() {
 
     # remove cached file to force a recheck
     rm ${c_cache}/${1}.response
+  fi
+
+  # check if certificate expires soon
+  valid_days=$(printf '(%s-%s)/86400\n' "${r_valid:0:10}" "$(date +%s)" | bc)
+  if [ ${valid_days} -lt 0 ]; then
+    let 'i_result_expired++'
+    if [ ${r_code} -le ${nrpe_cr} ]; then r_code=${nrpe_cr}; fi
+    printf 'certificate for domain %s is expired!\n' "${1}" >> ${c_lockdir}/current.result
+  elif [ ${valid_days} -le ${p_critical_ending} ]; then
+    let 'i_result_exp_cr++'
+    if [ ${r_code} -le ${nrpe_cr} ]; then r_code=${nrpe_cr}; fi
+    printf 'certificate for domain %s expires at %s, critical limit reached!\n' "${1}" "$(date -d "UTC 1970-01-01 ${r_valid:0:10} secs" +%F)" >> ${c_lockdir}/current.result
+  elif [ ${valid_days} -le ${p_warning_ending}  ]; then
+    let 'i_result_exp_wa++'
+    if [ ${r_code} -le ${nrpe_wa} ]; then r_code=${nrpe_wa}; fi
+    printf 'certificate for domain %s expires at %s, warning limit reached!\n' "${1}" "$(date -d "UTC 1970-01-01 ${r_valid:0:10} secs" +%F)" >> ${c_lockdir}/current.result
   fi
 }
 
@@ -671,11 +700,24 @@ check_certificates() {
 ## build a nice looking responsetext
 ##
 parse_results() {
+  # build result string for grades
   if [ ${i_result_ok} -eq 1 ]; then result_string="${i_result_ok} certificate OK, "; else result_string="${i_result_ok} certificates OK, "; fi
   if [ ${i_result_wa} -eq 1 ]; then result_string="${result_string}${i_result_wa} certificate WARNING, "; else result_string="${result_string}${i_result_wa} certificates WARNING, "; fi
   if [ ${i_result_cr} -eq 1 ]; then result_string="${result_string}${i_result_cr} certificate CRITICAL "; else result_string="${result_string}${i_result_cr} certificates CRITICAL "; fi
   if [ ${i_result_sk} -eq 1 ]; then result_string="${result_string}and ${i_result_sk} certificate skipped"; else result_string="${result_string}and ${i_result_sk} certificates skipped"; fi
 
+  # add expiring certificates if necessary
+  if [ ${i_result_expired} -gt 0 ]; then
+    if [ ${i_result_expired} -eq 1 ]; then result_string="${result_string}, ${i_result_expired} certificate expired"; else result_string="${result_string}, ${i_result_expired} certificates expired"; fi
+  fi
+  if [ ${i_result_exp_cr} -gt 0 ]; then
+    if [ ${i_result_exp_cr} -eq 1 ]; then result_string="${result_string}, ${i_result_exp_cr} certificate expiring very soon"; else result_string="${result_string}, ${i_result_exp_cr} certificates expiring very soon"; fi
+  fi
+  if [ ${i_result_exp_wa} -gt 0 ]; then
+    if [ ${i_result_exp_wa} -eq 1 ]; then result_string="${result_string}, ${i_result_exp_wa} certificate expiring soon"; else result_string="${result_string}, ${i_result_exp_wa} certificates expiring soon"; fi
+  fi
+
+  # put it all together
   sed -i "1 s#^#${result_string}\n#;" ${c_lockdir}/current.result
   return_to_nagios "${r_code}" "$(cat ${c_lockdir}/current.result)"
 }

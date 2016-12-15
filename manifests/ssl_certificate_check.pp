@@ -14,15 +14,15 @@ class sys11lib::ssl_certificate_check (
   $return_ok_when = 'A',
   $return_warning_when = 'BC',
   $return_critical_when = 'DEFT',
-  $ending_warning_limit = '21',
-  $ending_critical_limit = '7',
+  $ending_warning_limit = 21,
+  $ending_critical_limit = 7,
   $skip_ip_check = false,
-  $curl_recheck_runs = '5',
-  $curl_recheck_interval = '10',
-  $curl_recheck_timeout = '300',
-  $cache_result_days = '7',
-  $cronjob_hour = '-1',
-  $cronjob_minute = '-1',
+  $curl_recheck_runs = 5,
+  $curl_recheck_interval = 10,
+  $curl_recheck_timeout = 300,
+  $cache_result_days = 7,
+  $cronjob_hour = -1,
+  $cronjob_minute = -1,
 ) {
   # ensure correct types
   validate_bool ( $place_script )
@@ -55,12 +55,12 @@ class sys11lib::ssl_certificate_check (
   validate_string ( $ending_warning_limit )
   validate_string ( $ending_critical_limit )
   validate_bool ( $skip_ip_check )
-  validate_string ( $curl_recheck_runs )
-  validate_string ( $curl_recheck_interval )
-  validate_string ( $curl_recheck_timeout )
-  validate_string ( $cache_result_days )
-  validate_string ( $cronjob_hour )
-  validate_string ( $cronjob_minute )
+  validate_integer ( $curl_recheck_runs )
+  validate_integer ( $curl_recheck_interval )
+  validate_integer ( $curl_recheck_timeout )
+  validate_integer ( $cache_result_days )
+  validate_integer ( $cronjob_hour )
+  validate_integer ( $cronjob_minute )
 
   # check paremeters
   if $place_script == false and $enable_check == true {
@@ -71,12 +71,12 @@ class sys11lib::ssl_certificate_check (
   }
 
   # create random cronjob time if necessary
-  if $cronjob_minute == '-1' {
+  if $cronjob_minute == -1 {
     $real_cronjob_minute = fqdn_rand(60)
   } else {
     $real_cronjob_minute = $cronjob_minute
   }
-  if $cronjob_hour == '-1' {
+  if $cronjob_hour == -1 {
     $real_cronjob_hour = fqdn_rand(24)
   } else {
     $real_cronjob_hour = $cronjob_hour

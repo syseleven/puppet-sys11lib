@@ -23,11 +23,11 @@ fi
 <% if @return_ok_when != 'A' -%> --ok-when '<%= return_ok_when %>'<% end -%>
 <% if @return_warning_when != 'BC' -%> --warning-when '<%= return_warning_when %>'<% end -%>
 <% if @return_critical_when != 'DEFT' -%> --critical-when '<%= return_critical_when %>'<% end -%>
-<% if @ending_warning_limit != 21 -%> --ending-warning-limit <%= ending_warning_limit %><% end -%>
-<% if @ending_critical_limit != 7 -%> --ending-critical-limit <%= ending_critical_limit %><% end -%>
+<% if @ending_warning_limit.to_i != 21 -%> --ending-warning-limit <%= ending_warning_limit %><% end -%>
+<% if @ending_critical_limit.to_i != 7 -%> --ending-critical-limit <%= ending_critical_limit %><% end -%>
 <% if @skip_ip_check == true -%> --skip-ip-check<% end -%>
-<% if @curl_recheck_runs != 5 -%> --curl-recheck-runs <%= curl_recheck_runs %><% end -%>
-<% if @curl_recheck_interval != 10 -%> --recheck-status-interval <%= curl_recheck_interval %><% end -%>
-<% if @curl_recheck_timeout != 300 -%> --recheck-status-timeout <%= curl_recheck_timeout %><% end -%>
-<% if @cache_result_days != 7 -%> --result-cache-time <%= (@cache_result_days * 4) %><% end -%>
+<% if @curl_recheck_runs.to_i != 5 -%> --curl-recheck-runs <%= curl_recheck_runs %><% end -%>
+<% if @curl_recheck_interval.to_i != 10 -%> --recheck-status-interval <%= curl_recheck_interval %><% end -%>
+<% if @curl_recheck_timeout.to_i != 300 -%> --recheck-status-timeout <%= curl_recheck_timeout %><% end -%>
+<% if @cache_result_days.to_i != 7 -%> --result-cache-time <%= (@cache_result_days * 4) %><% end -%>
 

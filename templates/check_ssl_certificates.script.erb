@@ -66,6 +66,8 @@ autodetect_service=''
 autodetect_certificates=''
 autodetect_domains=''
 r_code=-1
+declare -r min_keysize=2048
+declare -r invalid_sigalgs='SHA1withRSA'
 
 ##
 ## json helpers
@@ -77,6 +79,15 @@ json_get_ending='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin
 json_cnt_endpoints='import json,sys;sys.stdout.write(str(len(json.load(sys.stdin)["endpoints"])))'
 json_get_domain='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["serverName"]))'
 json_get_ipaddress='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["ipAddress"]))'
+
+json_get_keysize='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["details"]["key"]["size"]))'
+json_get_cert_issuer='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["details"]["cert"]["issuerLabel"]))'
+json_get_cert_sigalg='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["details"]["cert"]["sigAlg"]))'
+json_cnt_chaincerts='import json,sys;sys.stdout.write(str(len(json.load(sys.stdin)["endpoints"][0]["details"]["chain"]["certs"])))'
+json_get_chaincert_issuer='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["details"]["chain"]["certs"][0]["issuerLabel"]))'
+json_get_chaincert_sigalg='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["details"]["chain"]["certs"][0]["sigAlg"]))'
+json_get_chaincert_keysize='import json,sys;sys.stdout.write(json.dumps(json.load(sys.stdin)["endpoints"][0]["details"]["chain"]["certs"][0]["keySize"]))'
+
 
 ##
 ## display_usage()
@@ -536,6 +547,29 @@ get_result_from_response() {
   r_count=$(python -c "${json_cnt_endpoints}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
   r_valid=$(python -c "${json_get_ending}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
 
+  cert_keysize_warning=''
+  cert_sigalg_warning=''
+  chain_keysizewarning=''
+  chain_sigalg_warning=''
+
+  r_keysize=$(python -c "${json_get_keysize}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+  [[ ${r_keysize} -lt ${min_keysize} ]] && cert_keysize_warning="${r_keysize}"
+  r_cert_issuer=$(python -c "${json_get_cert_issuer}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+  r_cert_sigalg=$(python -c "${json_get_cert_sigalg}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+  [[ "${r_cert_sigalg}" == "${invalid_sigalgs}" ]] && cert_sigalg_warning="${r_cert_sigalg}"
+  r_cnt_chains=$(python -c "${json_cnt_chaincerts}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+  for i in $(seq 1 1 ${r_cnt_chains}); do
+    pi=$(printf '%s-1\n' "${i}" | bc)
+    p_chaincert_issuer="$(printf '%s\n' "${json_get_chaincert_issuer}" | sed "s#\[\"certs\"\]\[0\]#\[\"certs\"\]\[${pi}\]#g;")"
+    p_chaincert_sigalg="$(printf '%s\n' "${json_get_chaincert_sigalg}" | sed "s#\[\"certs\"\]\[0\]#\[\"certs\"\]\[${pi}\]#g;")"
+    p_chaincert_keysize="$(printf '%s\n' "${json_get_chaincert_keysize}" | sed "s#\[\"certs\"\]\[0\]#\[\"certs\"\]\[${pi}\]#g;")"
+    r_chaincert_issuer=$(python -c "${p_chaincert_issuer}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+    r_chaincert_sigalg=$(python -c "${p_chaincert_sigalg}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+    r_chaincert_keysize=$(python -c "${p_chaincert_keysize}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+    [[ ${r_chaincert_keysize} -lt ${min_keysize} ]] && chain_keysize_warning="${r_chaincert_keysize}"
+    [[ "${r_chaincert_sigalg}" == "${invalid_sigalgs}" ]] && chain_sigalg_warning="${r_chaincert_sigalg}"
+  done
+
   # get endpoint
   if [ "${r_count}" != '1' ]; then
     log "there are ${r_count} endpoints"
@@ -544,11 +578,12 @@ get_result_from_response() {
       pi=$(printf '%s-1\n' "${i}" | bc)
 
       # build json helpers
-      p_grade="$(printf '%s\n' "${json_get_grade}" | sed "s#\[0\]#\[${pi}\]#g;")"
-      p_stmsg="$(printf '%s\n' "${json_get_message}" | sed "s#\[0\]#\[${pi}\]#g;")"
-      p_domain="$(printf '%s\n' "${json_get_domain}" | sed "s#\[0\]#\[${pi}\]#g;")"
-      p_ip="$(printf '%s\n' "${json_get_ipaddress}" | sed "s#\[0\]#\[${pi}\]#g;")"
-      p_ending="$(printf '%s\n' "${json_get_ending}" | sed "s#\[0\]#\[${pi}\]#g;")"
+      p_grade="$(printf '%s\n' "${json_get_grade}" | sed "s#\[\"endpoints\"\]\[0\]#\[\"endpoints\"\]\[${pi}\]#g;")"
+      p_stmsg="$(printf '%s\n' "${json_get_message}" | sed "s#\[\"endpoints\"\]\[0\]#\[\"endpoints\"\]\[${pi}\]#g;")"
+      p_domain="$(printf '%s\n' "${json_get_domain}" | sed "s#\[\"endpoints\"\]\[0\]#\[\"endpoints\"\]\[${pi}\]#g;")"
+      p_ip="$(printf '%s\n' "${json_get_ipaddress}" | sed "s#\[\"endpoints\"\]\[0\]#\[\"endpoints\"\]\[${pi}\]#g;")"
+      p_ending="$(printf '%s\n' "${json_get_ending}" | sed "s#\[\"endpoints\"\]\[0\]#\[\"endpoints\"\]\[${pi}\]#g;")"
+      p_chaincerts="$(printf '%s\n' "${json_cnt_chaincerts}" | sed "s#\[\"endpoints\"\]\[0\]#\[\"endpoints\"\]\[${pi}\]#g;")"
 
       # get grade, message, domain and ip for current endpoint
       r_grade=$(python -c "${p_grade}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
@@ -562,6 +597,19 @@ get_result_from_response() {
 
       # print data for endpoint
       log "endpoint ${i}: ${r_domain} (${r_ip})"
+
+      r_cnt_chains=$(python -c "${p_chaincerts}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+      for ii in $(seq 1 1 ${r_cnt_chains}); do
+        pii=$(printf '%s-1\n' "${ii}" | bc)
+        p_chaincert_issuer="$(printf '%s\n' "${json_get_chaincert_issuer}" | sed "s#\[\"certs\"\]\[0\]#\[\"certs\"\]\[${pii}\]#g;")"
+        p_chaincert_sigalg="$(printf '%s\n' "${json_get_chaincert_sigalg}" | sed "s#\[\"certs\"\]\[0\]#\[\"certs\"\]\[${pii}\]#g;")"
+        p_chaincert_keysize="$(printf '%s\n' "${json_get_chaincert_keysize}" | sed "s#\[\"certs\"\]\[0\]#\[\"certs\"\]\[${pii}\]#g;")"
+        r_chaincert_issuer=$(python -c "${p_chaincert_issuer}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+        r_chaincert_sigalg=$(python -c "${p_chaincert_sigalg}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+        r_chaincert_keysize=$(python -c "${p_chaincert_keysize}" < ${c_cache}/${1}.response 2>/dev/null | sed 's#"##g;')
+        [[ ${r_chaincert_keysize} -lt ${min_keysize} ]] && chain_keysize_warning="${r_chaincert_keysize}"
+        [[ "${r_chaincert_sigalg}" == "${invalid_sigalgs}" ]] && chain_sigalg_warning="${r_chaincert_sigalg}"
+      done
 
       # break if domain or ip is matching
       if [ "${1}" == "${r_domain}" ]; then
@@ -579,19 +627,36 @@ get_result_from_response() {
   fi
 
   # handle result
+  r_cert=-1
   if [ "${r_state}" = "READY" ]; then
     # update returncode
     case ${r_grade} in
-      [${p_ok_when}]*)        if [ ${r_code} -le ${nrpe_ok} ]; then r_code=${nrpe_ok}; fi; let 'i_result_ok++';;
-      [${p_warning_when}]*)   if [ ${r_code} -le ${nrpe_wa} ]; then r_code=${nrpe_wa}; fi; let 'i_result_wa++';;
-      [${p_critical_when}]*)  if [ ${r_code} -le ${nrpe_cr} ]; then r_code=${nrpe_cr}; fi; let 'i_result_cr++';;
-      *)                      r_code=${nrpe_un};;
+      [${p_ok_when}]*)        if [ ${r_code} -le ${nrpe_ok} ]; then r_code=${nrpe_ok}; fi; r_cert=${nrpe_ok};;
+      [${p_warning_when}]*)   if [ ${r_code} -le ${nrpe_wa} ]; then r_code=${nrpe_wa}; fi; r_cert=${nrpe_wa};;
+      [${p_critical_when}]*)  if [ ${r_code} -le ${nrpe_cr} ]; then r_code=${nrpe_cr}; fi; r_cert=${nrpe_cr};;
+      *)                      r_code=${nrpe_un}; r_cert=${nrpe_un};;
     esac
 
     # update response
     if [ -n "${r_grade}" ]; then
       log "grade for domain ${1}: ${r_grade}"
       printf "grade for domain %s: %s%s\n" "${1}" "${r_grade}" "${2:-}" >> ${c_lockdir}/current.result
+      [[ ${#cert_keysize_warning} -gt 0 ]] && \
+        log "insecure keysize for domain ${1} used: ${cert_keysize_warning}" && \
+	printf 'insecure keysize for domain %s used: %s%s\n' "${1}" "${cert_keysize_warning}" "${2:-}" >> ${c_lockdir}/current.result && \
+        [[ ${r_cert} -le ${nrpe_wa} ]] && r_cert=${nrpe_wa}
+      [[ ${#cert_sigalg_warning} -gt 0 ]] && \
+        log "insecure algorithm for domain ${1} used: ${cert_sigalg_warning}" && \
+        printf "insecure algorithm for domain %s used: %s%s\n" "${1}" "${cert_sigalg_warning}" "${2:-}" >> ${c_lockdir}/current.result && \
+	[[ ${r_cert} -le ${nrpe_cr} ]] && r_cert=${nrpe_cr}
+      [[ ${#chain_keysize_warning} -gt 0 ]] && \
+        log "insecure keysize in a chaincertificate for domain ${1} used: ${chain_keysize_warning}" && \
+        printf "insecure keysize in a chaincertificate for domain %s used: %s%s\n" "${1}" "${chain_keysize_warning}" "${2:-}" >> ${c_lockdir}/current.result && \
+        [[ ${r_cert} -le ${nrpe_wa} ]] && r_cert=${nrpe_wa}
+      [[ ${#chain_sigalg_warning} -gt 0 ]] && \
+        log "insecure algorithm in a chaincertificate for domain ${1} used: ${chain_sigalg_warning}" && \
+        printf "insecure algorithm in a chaincertificate for domain %s used: %s%s\n" "${1}" "${chain_sigalg_warning}" "${2:-}" >> ${c_lockdir}/current.result && \
+	[[ ${r_cert} -le ${nrpe_cr} ]] && r_cert=${nrpe_cr}
     else
       log "cannot get grade for domain ${1}, message: ${r_stmsg}"
       printf "cannot get grade for domain %s, message: %s\n" "${1}" "${r_stmsg}" >> ${c_lockdir}/current.result
@@ -606,6 +671,12 @@ get_result_from_response() {
     # remove cached file to force a recheck
     rm ${c_cache}/${1}.response
   fi
+  case ${r_cert} in
+    ${nrpe_ok}) let 'i_result_ok++'; if [ ${r_code} -le ${nrpe_ok} ]; then r_code=${nrpe_ok}; fi;;
+    ${nrpe_wa}) let 'i_result_wa++'; if [ ${r_code} -le ${nrpe_wa} ]; then r_code=${nrpe_wa}; fi;;
+    ${nrpe_cr}) let 'i_result_cr++'; if [ ${r_code} -le ${nrpe_cr} ]; then r_code=${nrpe_cr}; fi;;
+    *)          ;;
+  esac
 
   # check if certificate expires soon
   valid_days=$(printf '(%s-%s)/86400\n' "${r_valid:0:10}" "$(date +%s)" | bc)

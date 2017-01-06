@@ -48,8 +48,8 @@ define sys11lib::ensure_key_value (
   }
 
   #quoting hell ahead
-  $sedquotedline = regsubst(regsubst("${key}${delimiter}${value}",'\\','\\\\'), '&', '\\&')
-  $regqkey = regsubst($key,'[\[\].*]','\\\0', 'G')
+  $sedquotedline = shell_escape("${key}${delimiter}${value}")
+  $regqkey = regexpescape($key)
   $qsedexpr = shellquote("s|^[ \t]*${regqkey}[ \t]*${delimiter}.*$|${sedquotedline}|g")
   $qgrepexpr = shellquote("^[ \t]*${regqkey}[ \t]*${delimiter}" )
   $qline = shellquote("${key}${delimiter}${value}")

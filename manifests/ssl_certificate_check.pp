@@ -156,7 +156,7 @@ class sys11lib::ssl_certificate_check (
     }
 
     # register hostgroup
-    nagios::hostgroup::register_hostgroup { 'ssl_certificate_grade':  }
+    nagios::register_hostgroup { 'ssl_certificate_grade':  }
   } else {
     # remove cronjob
     file { 'caller check_ssl_certificates':
@@ -169,6 +169,6 @@ class sys11lib::ssl_certificate_check (
     }
 
     # unregister hostgroup
-    nagios::hostgroup::unregister_hostgroup { 'ssl_certificate_grade':  }
+    nagios::unregister_hostgroup { 'ssl_certificate_grade':  }
   }
 }

@@ -82,7 +82,7 @@ Helper module to easily throw notifies for deprecating warnings.
           new: 'Role "virtuozzo_ve" with Class "nginx2"'
           add: 'These is additional messages which currently says really nothing.'
 
-## sys11lib::deprecated::deprecated_set
+## sys11lib::deprecated_set
 
 ### Parameters:
 
@@ -95,7 +95,7 @@ Helper module to easily throw notifies for deprecating warnings.
 
 ### Sample Usage (Manifest):
 
-    sys11lib::deprecated::deprecated_set { 'nginx->nginx2':
+    sys11lib::deprecated_set { 'nginx->nginx2':
       old => 'nginx',
       new => 'nginx2',
     }

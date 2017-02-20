@@ -1,1 +1,5 @@
-<%=scope.lookupvar('::sys11name')%> <%=scope.lookupvar('::ipaddress_internal')%> <% if (scope.lookupvar('::role').class == Array) -%><%=scope.lookupvar('::role').join', '%><%elsif (scope.lookupvar('::role').class == Hash)%><%=scope.lookupvar('::role').keys.join', '%><% else -%><%=scope.lookupvar('::role')%><% end %>
+<%= @trusted['certname'] -%>
+ <%= @ipaddress_internal -%>
+ <% if (@role.class == Array) -%><%= @role.join', ' -%><%elsif (@role.class == Hash) -%><%= @role.keys.join', ' -%><% else -%><%= @role -%><% end -%>
+ <% if (@roles.class == Array) -%><%= @roles.join', ' -%><%elsif (@roles.class == Hash) -%><%= @roles.keys.join', ' -%><% else -%><%= @roles -%><% end -%>
+

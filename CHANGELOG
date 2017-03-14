@@ -1,3 +1,5 @@
+1.6.1
+  - Remove roles from .ve-name #pp-3733
 1.6
   - Use ::trusted['certname'] instead of $::sys11name
 1.5

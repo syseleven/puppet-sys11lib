@@ -1,5 +1,3 @@
 <%= @trusted['certname'] -%>
  <%= @ipaddress_internal -%>
- <% if (@role.class == Array) -%><%= @role.join', ' -%><%elsif (@role.class == Hash) -%><%= @role.keys.join', ' -%><% else -%><%= @role -%><% end -%>
- <% if (@roles.class == Array) -%><%= @roles.join', ' -%><%elsif (@roles.class == Hash) -%><%= @roles.keys.join', ' -%><% else -%><%= @roles -%><% end -%>
 

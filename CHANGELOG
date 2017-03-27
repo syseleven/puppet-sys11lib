@@ -1,3 +1,5 @@
+1.6.2
+  - add monitoring check for detecting multiple daemon instances #pp-3773
 1.6.1
   - Remove roles from .ve-name #pp-3733
 1.6

@@ -148,3 +148,11 @@ Helper module to easily throw notifies for deprecating warnings.
       it via nagios directly, we had to use a cronjob. Recommendation
       is to keep the default. In this case puppet sets the value by
       using random values
+
+## sys11lib::daemon_instances_check
+
+### Parameters:
+
+    Optional[Boolean] $enable_check = true,
+    Optional[String]  $daemons = 'apache2 mysqld nginx',
+

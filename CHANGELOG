@@ -1,3 +1,5 @@
+1.6.3
+  - Add sys11_openvz_processsorcount fact # pp-3839
 1.6.2
   - add monitoring check for detecting multiple daemon instances #pp-3773
 1.6.1
